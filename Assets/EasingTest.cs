@@ -5,28 +5,47 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 
-[ExecuteAlways]
+
 public class EasingTest : MonoBehaviour
 {
 	public LineRenderer LineRenderer;
 	public Easing.EasingType EasingType;
 	public Vector3[] Positions = new Vector3[100];
 	public Transform SpriteTransform;
+	public Button BtnTemplate;
+	public RectTransform BtnContainer;
 
-	public Dropdown Dropdown;
-	List<string> Options = new List<string>();
 
 	public void Start()
 	{
-		Options.Clear();
+		int c = BtnContainer.childCount;
+		for (int i = c - 1; i >= 1; i--)
+		{
+			if (Application.isPlaying)
+			{
+				Destroy(BtnContainer.GetChild(i).gameObject);
+			}
+			else
+			{
+				DestroyImmediate(BtnContainer.GetChild(i).gameObject);
+			}
+
+		}
+
 		for (int i = 0; i < 31; i++)
-			Options.Add(((Easing.EasingType)i).ToString());
-		
-		Dropdown.ClearOptions();
-		Dropdown.AddOptions(Options);
-		Dropdown.onValueChanged.RemoveAllListeners();
-		Dropdown.onValueChanged.AddListener(OnValueChanged);
-		Dropdown.value = 1;
+		{
+			var btn = Instantiate(BtnTemplate, BtnContainer);
+			Easing.EasingType t = (Easing.EasingType)i;
+			btn.onClick.AddListener(() => OnValueChanged((int)t));
+			btn.GetComponentInChildren<Text>().text = t.ToString();
+			btn.gameObject.SetActive(true);
+			if (i == 1)
+			{
+				btn.Select();
+				EasingType = (Easing.EasingType)i;
+			}
+		}
+
 	}
 
 	private void OnValueChanged(int value)
