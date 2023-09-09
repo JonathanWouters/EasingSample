@@ -1,3 +1,4 @@
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -11,10 +12,12 @@ public class EasingTest : MonoBehaviour
 	public LineRenderer LineRenderer;
 	public Easing.EasingType EasingType;
 	public Vector3[] Positions = new Vector3[100];
+	private Vector3[] _previousPositions = new Vector3[100];
+	private Vector3[] _nextPositions = new Vector3[100];
 	public Transform SpriteTransform;
 	public Button BtnTemplate;
 	public RectTransform BtnContainer;
-
+	private float _timeOfLastChange = 0;
 
 	public void Start()
 	{
@@ -32,6 +35,9 @@ public class EasingTest : MonoBehaviour
 
 		}
 
+		_nextPositions = new Vector3[Positions.Length];
+		_previousPositions = new Vector3[Positions.Length];
+
 		for (int i = 0; i < 31; i++)
 		{
 			var btn = Instantiate(BtnTemplate, BtnContainer);
@@ -43,14 +49,23 @@ public class EasingTest : MonoBehaviour
 			{
 				btn.Select();
 				EasingType = (Easing.EasingType)i;
+				OnValueChanged(i);
 			}
 		}
-
 	}
 
 	private void OnValueChanged(int value)
 	{
 		EasingType = (Easing.EasingType)value;
+		Array.Copy(Positions, _previousPositions, Positions.Length);
+
+		for (int i = 0; i < _nextPositions.Length; i++)
+		{
+			float t = i / (float)_nextPositions.Length;
+			_nextPositions[i] = new Vector3(Mathf.Lerp(-10, 10, t), Mathf.LerpUnclamped(-10, 10, Easing.Ease(t, EasingType)), 0);
+		}
+
+		_timeOfLastChange = Time.timeSinceLevelLoad;
 	}
 
 	// Update is called once per frame
@@ -61,11 +76,12 @@ public class EasingTest : MonoBehaviour
 
 		for (int i = 0; i < Positions.Length; i++)
 		{
-			float t = i / (float)Positions.Length;
-			Positions[i] = new Vector3(Mathf.Lerp(-10, 10, t), Mathf.LerpUnclamped(-10, 10, Easing.Ease(t, EasingType)), 0);
+			float elapsedT = Time.timeSinceLevelLoad - _timeOfLastChange;
+			float t = Mathf.Clamp01(elapsedT / 0.4f);
+			Positions[i] = Vector3.LerpUnclamped(_previousPositions[i], _nextPositions[i], Easing.Ease(t, Easing.EasingType.InOutBack)); //new Vector3(Mathf.Lerp(-10, 10, t), Mathf.LerpUnclamped(-10, 10, Easing.Ease(t, EasingType)), 0);
 		}
-		LineRenderer.SetPositions(Positions);
 
+		LineRenderer.SetPositions(Positions);
 
 		{
 			Vector3 pos = SpriteTransform.localPosition;
